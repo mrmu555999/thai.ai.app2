@@ -5,96 +5,150 @@ import tempfile
 import os
 import re
 
-# --- 1. ページ設定 ---
-st.set_page_config(page_title="ムー先生の深掘りタイ語辞書", page_icon="🐷", layout="centered")
+# --- 1. ページ設定（初代のデザインを継承） ---
+st.set_page_config(
+    page_title="ムー先生のタイ語‼️",
+    page_icon="🇹🇭",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
+# 背景色とスタイルの設定（初代Mr.Muカスタムスタイルを完全再現）
 st.markdown("""
     <style>
-    .main-title { font-size: 2.2rem; font-weight: bold; color: #d93025; text-align: center; }
-    .sub-title { font-size: 1rem; color: #666; text-align: center; margin-bottom: 2rem; }
-    .dict-card { background-color: white; padding: 20px; border-radius: 15px; border-left: 8px solid #0033a0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .stApp { background-color: #fcfcfc; }
+    .stButton>button { 
+        width: 100%; 
+        border-radius: 12px; 
+        background: linear-gradient(90deg, #d50000, #0033a0);
+        color: white; 
+        font-weight: bold; 
+        border: 2px solid #ffffff;
+        height: 3.5em;
+        font-size: 18px;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #0033a0, #d50000);
+        border: 2px solid #ffd700;
+    }
+    .thai-card { 
+        background-color: white; 
+        padding: 18px; 
+        border-radius: 15px; 
+        border-left: 8px solid #d93025; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        margin-bottom: 20px; 
+        color: #1a1a1a;
+    }
+    .thai-word { font-size: 30px; font-weight: bold; color: #1a1a1a; margin-bottom: 5px; }
+    .thai-mean { font-size: 20px; font-weight: bold; color: #d93025; margin-top: 5px; }
     .section-header { font-size: 1.2rem; font-weight: bold; color: #d93025; margin-bottom: 10px; border-bottom: 1px solid #eee; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. API設定 ---
+# --- 2. セキュリティ・モデル設定 ---
 api_key = os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 else:
-    st.error("⚠️ APIキーを設定してください。")
+    st.error("APIキーの設定を確認してください。")
     st.stop()
 
-# --- 3. ヘッダー ---
-st.markdown('<p class="main-title">ムー先生の深掘りタイ語辞書 🐷🎓</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">日本語からタイ語を、タイ文字から意味と成り立ちを調べよう！</p>', unsafe_allow_html=True)
+# --- 3. メイン画面（画像とヘッダーの完全再現） ---
 
-# --- 4. 入力エリア ---
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    try:
+        st.image("musenseinew.jpg", width=400)
+    except:
+        st.warning("画像 'musenseinew.jpg' を読み込めません。")
+
+st.markdown("""
+<div style='text-align:center;'>
+<h1 style="margin-bottom:0;">
+ムー先生<span style="font-size:0.8em;">の</span>深掘りタイ語辞書 🐷🎓
+</h1>
+<div style='font-size:1.1rem; font-weight:bold; margin-top:20px; margin-bottom:20px;'>
+日本語からタイ語を、タイ文字から成り立ちを調べよう！✏️<br>
+単語を分解して理解すれば、語彙力がグンとアップします 🇹🇭💬
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+# 入力エリア
 search_query = st.text_input("", placeholder="例：眠い / ง่วงนอน")
 
-if search_query:
-    with st.spinner('ムー先生が全力で執筆中...'):
-        try:
-            # 教えていただいた成功ロジックでモデルを選択
-            available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            target_models = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro"]
-            model_name = next((m for m in target_models if m in available_models), available_models[0])
-            model = genai.GenerativeModel(model_name=model_name)
+# --- 4. 生成ロジック ---
+if st.button("ムー先生に教えてもらう！", use_container_width=True):
 
-            prompt = f"""
-            タイ語講師「ムー先生」として【{search_query}】を解説してください。挨拶は不要です。必ず以下の3項目を含めてください。
-            1. 【基本】: タイ語 | カタカナ | 日本語の意味
-            2. 【成り立ち】: 語源や分解（例：A + B）の説明
-            3. 【バリエーション】: 日常フレーズを2〜3個
-            """
+    if not search_query:
+        st.warning("調べたい言葉を入力してくださいね！")
+    else:
+        with st.spinner('ムー先生AIが深掘り解説を作成中...'):
+            try:
+                # 動いているコードの自動判別ロジック
+                available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                target_models = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro"]
+                model_name = next((m for m in target_models if m in available_models), available_models[0])
+                model = genai.GenerativeModel(model_name=model_name)
 
-            response = model.generate_content(prompt)
-            full_text = response.text
+                prompt = f"""
+                タイ語講師「ムー先生」として【{search_query}】を深掘り解説してください。
+                必ず以下の3項目を正確に含めてください。挨拶は不要です。
 
-            # --- 表示抽出ロジック（強化版） ---
-            # 各項目を正規表現で抜き出します
-            def extract(label, text):
-                # 「1. 【基本】:」のような形から次の項目までを抜き出す
-                pattern = f"【{label}】:?(.*?)(?=\\n\\d|\\n【|$)"
-                match = re.search(pattern, text, re.DOTALL)
-                return match.group(1).strip() if match else ""
+                【基本】: タイ語 | カタカナ読み | 日本語の意味
+                【成り立ち】: 語源やパーツ分解の説明（例：A + B）
+                【バリエーション】: その言葉を使った日常フレーズを2〜3個
+                """
 
-            kihon = extract("基本", full_text)
-            naritachi = extract("成り立ち", full_text)
-            variation = extract("バリエーション", full_text)
+                response = model.generate_content(prompt)
+                full_text = response.text
 
-            # --- カード表示 ---
-            # 1. 検索結果
-            if kihon:
-                st.markdown('<div class="dict-card">', unsafe_allow_html=True)
-                st.markdown('<div class="section-header">🔍 検索結果</div>', unsafe_allow_html=True)
-                st.write(kihon)
-                # 音声再生
-                try:
-                    thai_text = kihon.split('|')[0].strip()
-                    tts = gTTS(text=thai_text, lang="th")
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
-                        tts.save(fp.name)
-                        st.audio(fp.name)
-                except: pass
-                st.markdown('</div>', unsafe_allow_html=True)
+                # 抜き出し用関数
+                def extract(label, text):
+                    pattern = f"【{label}】:?(.*?)(?=\\n\\d|\\n【|$)"
+                    match = re.search(pattern, text, re.DOTALL)
+                    return match.group(1).strip() if match else ""
 
-            # 2. 成り立ち
-            if naritachi:
-                st.markdown('<div class="dict-card">', unsafe_allow_html=True)
-                st.markdown('<div class="section-header">🧩 言葉の成り立ち</div>', unsafe_allow_html=True)
-                st.write(naritachi)
-                st.markdown('</div>', unsafe_allow_html=True)
+                kihon = extract("基本", full_text)
+                naritachi = extract("成り立ち", full_text)
+                variation = extract("バリエーション", full_text)
 
-            # 3. バリエーション
-            if variation:
-                st.markdown('<div class="dict-card">', unsafe_allow_html=True)
-                st.markdown('<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
-                st.write(variation)
-                st.markdown('</div>', unsafe_allow_html=True)
+                # --- 抽出結果を初代のカード形式で表示 ---
+                
+                # 1. 基本
+                if kihon:
+                    st.markdown('<div class="section-header">🔍 検索結果</div>', unsafe_allow_html=True)
+                    st.markdown(f'''
+                    <div class="thai-card">
+                        <div class="thai-word">{kihon.split('|')[0] if "|" in kihon else kihon}</div>
+                        <div style="color: #666;">{kihon.split('|')[1] if kihon.count('|')>=2 else ""}</div>
+                        <div class="thai-mean">&#128073; {kihon.split('|')[-1] if "|" in kihon else ""}</div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                    
+                    # 音声
+                    try:
+                        thai_for_tts = kihon.split('|')[0].strip()
+                        tts = gTTS(text=thai_for_tts, lang="th")
+                        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+                        tts.save(tmp.name)
+                        st.audio(tmp.name)
+                    except: pass
 
-        except Exception as e:
-            st.error(f"エラーが発生しました: {e}")
+                # 2. 成り立ち
+                if naritachi:
+                    st.markdown('<div class="section-header">🧩 言葉の成り立ち</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="thai-card">{naritachi}</div>', unsafe_allow_html=True)
 
-with st.sidebar:
-    st.info("調べたい言葉を入れてね！ムー先生が分解して教えるよ。")
+                # 3. バリエーション
+                if variation:
+                    st.markdown('<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="thai-card">{variation}</div>', unsafe_allow_html=True)
+
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
+
+# --- 5. フッター ---
+st.divider()
+st.markdown("<div style='text-align: center; color: gray;'>Presented by Mr.Mu</div>", unsafe_allow_html=True)
