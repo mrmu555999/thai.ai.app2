@@ -2,273 +2,115 @@ import streamlit as st
 import google.generativeai as genai
 from gtts import gTTS
 import tempfile
+import os
 
 # --- 1. ページ設定 ---
 st.set_page_config(
-    page_title="ムー先生のタイ語‼️",
-    page_icon="🇹🇭",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    page_title="ムー先生の深掘りタイ語辞書",
+    page_icon="🐷",
+    layout="centered"
 )
 
-# 背景色とスタイルの設定（Mr.Muカスタムスタイル）
+# カスタムCSS
 st.markdown("""
     <style>
-    .stApp { background-color: #fcfcfc; }
-    .stButton>button { width: 100%; border-radius: 12px; background-color: #d93025; color: white; font-weight: bold; }
-    .thai-card { background-color: white; padding: 18px; border-radius: 15px; border-left: 8px solid #d93025; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    .thai-word { font-size: 32px; font-weight: bold; color: #1a1a1a; }
-    .thai-mean { font-size: 22px; font-weight: bold; color: #d93025; }
+    .main-title { font-size: 2.2rem; font-weight: bold; color: #d93025; text-align: center; }
+    .sub-title { font-size: 1rem; color: #666; text-align: center; margin-bottom: 2rem; }
+    .dict-card { background-color: white; padding: 20px; border-radius: 15px; border-left: 8px solid #0033a0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .section-header { font-size: 1.2rem; font-weight: bold; color: #d93025; margin-bottom: 10px; border-bottom: 1px solid #eee; }
+    .thai-main { font-size: 2.5rem; font-weight: bold; color: #1a1a1a; margin-bottom: 5px; }
+    .kana-main { font-size: 1.3rem; color: #555; }
+    .structure-box { background-color: #f0f2f6; padding: 15px; border-radius: 10px; font-family: monospace; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. セキュリティ設定 ---
+# --- 2. API設定 ---
 try:
-    if "GEMINI_API_KEY" in st.secrets:
-        API_KEY = st.secrets["GEMINI_API_KEY"]
-    else:
-        API_KEY = "dummy"
+    API_KEY = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else "YOUR_API_KEY"
     genai.configure(api_key=API_KEY)
-except Exception as e:
-    st.error("APIキーの設定を確認してください。")
+except:
+    st.error("APIキーが設定されていません。")
     st.stop()
 
-# --- 3. メイン画面 ---
+# --- 3. ヘッダー ---
+st.markdown('<p class="main-title">ムー先生の深掘りタイ語辞書 🐷🎓</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">日本語からタイ語を、タイ文字から意味と成り立ちを調べよう！</p>', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1,2,1])
+# --- 4. 入力エリア ---
+search_query = st.text_input("", placeholder="例：眠い / ง่วงนอน", help="日本語またはタイ語を入力してください")
 
-with col2:
-    st.image("musenseinew.jpg", width=400)
+if search_query:
+    with st.spinner('ムー先生が調べています...'):
+        try:
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            
+            prompt = f"""
+            あなたはタイ語と日本語のバイリンガル講師「ムー先生」です。
+            ユーザーが入力したキーワード【{search_query}】について、以下の形式で解説を生成してください。
 
-st.markdown("""
-<div style='text-align:center;'>
+            1. 【基本】: タイ語 | カタカナ読み | 日本語の意味
+            2. 【成り立ち】: 単語を最小単位に分解して、それぞれの意味を説明（例：ง่วงนอน = ง่วง(眠い) + นอน(寝る)）。分解できない単語の場合は、その語源や使われる背景を説明。
+            3. 【バリエーション】: その単語を使った、日常で役立つ応用フレーズを2〜3個（タイ語 | カタカナ | 日本語訳）。
 
-<h1 style="margin-bottom:0;">
-ムー先生<span style="font-size:0.8em;">の</span>タイ語レッスン🇹🇭
-</h1>
+            【出力ルール】
+            ・必ず「タイ語 | カタカナ | 意味」の形式を含めること。
+            ・解説は親しみやすく、かつ正確に。
+            ・余計な挨拶は不要。
+            """
 
-<div style='font-size:1.1rem; font-weight:bold; margin-top:20px;'>
+            response = model.generate_content(prompt)
+            result_text = response.text
 
-タイ旅行の前にサクッと予習 ✏️<br>
+            # --- 表示ロジック ---
+            # AIの回答を簡易的にパース（セクションごとに分割）
+            sections = result_text.split('\n\n')
 
-シチュエーションを入力すると<br>
-その場で使えるタイ語フレーズを 🇹🇭💬<br>
-ムー先生が生成します 🐷🎓✨
-
-</div>
-
-</div>
-""", unsafe_allow_html=True)
-
-# 入力欄
-situation = st.text_area(
-    "",
-    placeholder="""入力例：
-屋台でカオマンガイを食べる
-タイマッサージに行く
-⚪︎⚪︎⚪︎へ飲みに行く""",
-    height=150
-)
-
-# --- タイカラーのボタンデザイン ---
-st.markdown("""
-<style>
-div.stButton > button {
-    background: linear-gradient(90deg, #d50000, #0033a0);
-    color: white;
-    font-weight: bold;
-    border-radius: 12px;
-    border: 2px solid #ffffff;
-    height: 3.5em;
-    font-size: 18px;
-}
-
-div.stButton > button:hover {
-    background: linear-gradient(90deg, #0033a0, #d50000);
-    border: 2px solid #ffd700;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# --- 4. 生成ロジック ---
-if st.button("フレーズを生成する！", use_container_width=True):
-
-    if not situation:
-        st.warning("シチュエーションを入力してくださいね！")
-
-    else:
-        with st.spinner('ムー先生AIが作成中...'):
-
+            # メイン結果の抽出（最初の行を想定）
+            st.markdown('<div class="dict-card">', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-header">🔍 検索結果</div>', unsafe_allow_html=True)
+            
+            # 最初のセクションからタイ語を抽出して音声生成
+            first_line = sections[0]
+            st.write(first_line)
+            
+            # タイ文字を抽出して音声再生（簡易的な抽出）
+            thai_text = first_line.split('|')[0].replace('【基本】:', '').strip()
+            
             try:
+                tts = gTTS(text=thai_text, lang="th")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                    tts.save(fp.name)
+                    st.audio(fp.name)
+            except:
+                pass
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                # 利用可能なモデルを自動判別
-                available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                target_models = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro"]
-                model_name = next((m for m in target_models if m in available_models), available_models[0])
+            # 成り立ちとバリエーションを表示
+            for sec in sections[1:]:
+                if "【成り立ち】" in sec:
+                    st.markdown('<div class="dict-card">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="section-header">🧩 言葉の成り立ち</div>', unsafe_allow_html=True)
+                    st.write(sec.replace('【成り立ち】:', ''))
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                elif "【バリエーション】" in sec:
+                    st.markdown('<div class="dict-card">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
+                    st.write(sec.replace('【バリエーション】:', ''))
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-                model = genai.GenerativeModel(model_name=model_name)
+        except Exception as e:
+            st.error(f"エラーが発生しました: {e}")
 
-                # 【Mr.Mu流：深掘りシミュレーション型プロンプト】
-                prompt = f"""
-あなたはタイ文化、タイ語の日常会話、観光事情、日本人旅行者の行動を熟知したプロのタイ語コミュニケーションガイドです。
-
-ユーザーが入力したシチュエーション：
-【{situation}】
-
-この場面で日本人旅行者がタイ人と実際に会話する状況を具体的に想像してください。
-
-まず頭の中で、このシチュエーションで発生する会話パターンを考えてください。
-
-例：
-・挨拶
-・質問
-・注文
-・値段確認
-・お願い
-・確認
-・感謝
-・断る
-・支払い
-・トラブル対応
-
-次に、その場面で実際に使う可能性が高いタイ語を作成してください。
-
-【夜の繁華街シチュエーション判断】
-
-ユーザーのシチュエーションに次のようなタイの夜の繁華街の名称が含まれている場合：
-
-ナナプラザ  
-ソイカウボーイ   
-タニヤ  
-テーメーカフェ  
-
-さらに次のような行動や言葉が含まれている場合：
-
-飲む  
-バー  
-飲みに行く  
-夜遊び  
-ゴーゴーバー  
-
-この場合、日本人旅行者が女性がいるお店で会話している状況を想定してください。
-
-そして会話例文の中に必ず次の意味の例文を1つ含めてください。
-
-「LINEを交換しましょう」
-
-この例文は21〜40行の会話例文の中に必ず含めてください。
-
-【出力内容】
-
-・最初の20行：この場面でよく使うタイ語の単語  
-（単語または短いフレーズ）
-
-・次の20行：この場面で実際に使う短い例文  
-（旅行者がそのまま使える自然な会話）
-
-【条件】
-
-・タイ人が日常会話で使う自然な表現  
-・タイ語はタイ人ネイティブが日常で実際に使う自然な会話のみ生成してください  
-・書き言葉ではなく会話で使う口語表現を優先してください  
-・日本人旅行者でも使いやすい  
-・丁寧な表現（男性語尾：ครับ / krap を使用）  
-・単語と例文は重複しない  
-・観光・生活で実際に使う会話を優先  
-・教科書的な不自然な表現は避ける  
-・カタカナは日本人が読みやすい自然なカタカナ表記にしてください  
-・カタカナにアルファベット（a〜z）は絶対に含めないでください  
-・例：ครับ → クラップ  
-
-【出力形式】
-
-必ず40行のみ出力してください。
-
-1〜20行：単語または短いフレーズ  
-21〜40行：短い会話例文  
-
-各行は必ず次の形式で出力してください。
-
-タイ語 | ローマ字 | カタカナ | 日本語
-
-説明文は禁止  
-番号は禁止  
-40行のデータのみ出力
-
-例：
-
-สวัสดีครับ | sa-wat-dii krap | サワッディー クラップ | こんにちは
-ขอบคุณครับ | khop-khun krap | コープクン クラップ | ありがとう
-ราคาเท่าไร | raa-khaa thao-rai | ラーカー タオライ | いくらですか
-
-"""
-
-                response = model.generate_content(prompt)
-
-                lines = response.text.split('\n')
-
-                count = 0
-                copy_text = ""
-
-                for line in lines:
-
-                    if "|" not in line:
-                        continue
-
-                    parts = [p.strip() for p in line.split("|")]
-
-                    if len(parts) < 4:
-                        continue
-
-                    count += 1
-
-                    thai = parts[0]
-                    roma = parts[1]
-                    kana = parts[2]
-                    jp = parts[3]
-
-                    copy_text += f"{count}. {thai} ({roma}) : {jp}\n"
-
-                    if count == 1:
-                        st.markdown("### ✏️ 【単語・フレーズ 20】")
-                        st.divider()
-
-                    if count == 21:
-                        st.write("")
-                        st.markdown("### 📚 【会話例文 20】")
-                        st.divider()
-
-                    card_html = f'''
-<div class="thai-card">
-    <div class="thai-word">{count}. {thai}</div>
-    <div style="color: #666;">{roma} / {kana}</div>
-    <div class="thai-mean">&#128073; {jp}</div>
-</div>
-'''
-
-                    st.markdown(card_html, unsafe_allow_html=True)
-
-                    try:
-                        tts = gTTS(text=thai, lang="th")
-                        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-                        tts.save(tmp.name)
-                        st.audio(tmp.name)
-                    except:
-                        pass
-
-                    st.code(thai, language="text")
-
-                if count != 40:
-                    st.warning(f"⚠ 出力行数が40ではありません（現在 {count} 行）")
-
-                st.divider()
-                st.subheader("📋 スマホへのメモ用")
-                st.write("必要な方はコピーしてご活用ください。")
-                st.text_area("", value=copy_text, height=400, key="copy_area_final")
-
-            except Exception as e:
-                st.error(f"エラーが発生しました: {e}")
-
-# --- 5. フッター ---
-st.divider()
-st.markdown("<div style='text-align: center; color: gray;'>Presented by Mr.Mu</div>", unsafe_allow_html=True)
+# --- 5. 使い方ガイド ---
+with st.sidebar:
+    st.image("https://img.icons8.com/color/96/000000/thailand-circular.png", width=80)
+    st.title("使い方ガイド")
+    st.info("""
+    1. 検索窓に調べたい言葉を入れる。
+    2. 単語が分解されるので、パーツごとの意味を理解する。
+    3. 音声を聞いて発音をチェック！
+    4. 応用フレーズで語彙を増やす。
+    """)
+    st.divider()
+    st.caption("Presented by Mr.Mu")
