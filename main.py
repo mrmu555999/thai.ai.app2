@@ -45,7 +45,14 @@ with col2:
     else:
         st.image("https://img.icons8.com/color/96/000000/thailand-circular.png", width=100)
 
-st.markdown("<div style='text-align:center;'><h1>ムー先生の深掘りタイ語辞書 🐷🎓</h1></div>", unsafe_allow_html=True)
+st.markdown("""
+<div style='text-align:center; margin-top: 10px;'>
+    <h1 style="font-size: 2rem; margin-bottom: 5px;">ムー先生の深掘りタイ語辞書 🐷🎓</h1>
+    <p style='font-size: 0.95rem; font-weight: normal; color: #666; margin-bottom: 20px;'>
+        日本語やタイ語（単語も文章もOK）を入力してね！
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 search_query = st.text_input("", placeholder="例：眠い / ง่วงนอน")
 
