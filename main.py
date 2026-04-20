@@ -8,7 +8,7 @@ import re
 # --- 1. ページ設定 ---
 st.set_page_config(page_title="ムー先生のタイ語‼️", page_icon="🇹🇭", layout="centered")
 
-# 初代デザインの再現
+# 初代デザインの完全移植
 st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
@@ -16,6 +16,10 @@ st.markdown("""
         width: 100%; border-radius: 12px; 
         background: linear-gradient(90deg, #d50000, #0033a0);
         color: white; font-weight: bold; height: 3.5em; font-size: 18px;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #0033a0, #d50000);
+        border: 2px solid #ffd700;
     }
     .thai-card { 
         background-color: white; padding: 18px; border-radius: 15px; 
@@ -36,7 +40,7 @@ else:
     st.error("APIキーを設定してください。")
     st.stop()
 
-# --- 3. メイン画面 ---
+# --- 3. メイン画面（画像とヘッダー） ---
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
     if os.path.exists("musenseinew.jpg"):
@@ -55,51 +59,38 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
     else:
         with st.spinner('ムー先生が深掘り中...'):
             try:
-                # 動作実績のあるモデル判別ロジック
+                # 動作実績のあるモデル判別
                 available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                 target_models = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro"]
                 model_name = next((m for m in target_models if m in available_models), available_models[0])
                 model = genai.GenerativeModel(model_name=model_name)
 
-                # プロンプトの構築（エラー回避のためシンプルに記述）
-                prompt_text = f"タイ語講師ムー先生として【{search_query}】を以下の形式で解説して。挨拶不要。\n\n【基本】\nタイ語 | カタカナ | 意味\n\n【成り立ち】\n解説文\n\n【バリエーション】\n例文"
+                # プロンプトを一度変数に入れてから渡す（エラー回避のため）
+                p_text = f"あなたはタイ語講師のムー先生です。{search_query}について、基本（タイ語|カタカナ|意味）、成り立ち、バリエーションの3点を解説してください。挨拶は不要です。"
 
-                response = model.generate_content(prompt_text)
+                response = model.generate_content(p_text)
                 full_text = response.text
 
-                # 「【 】」を区切りとして分割
-                parts = re.split(r'【.*?】', full_text)
-                content = [p.strip() for p in parts if p.strip()]
-
-                # --- 1. 基本 ---
-                if len(content) >= 1:
-                    base_info = content[0].split('|')
-                    t_word = base_info[0].strip() if len(base_info) > 0 else content[0]
-                    t_kana = base_info[1].strip() if len(base_info) > 1 else ""
-                    t_imi  = base_info[2].strip() if len(base_info) > 2 else ""
-
-                    st.markdown('<div class="section-header">🔍 検索結果</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="thai-card"><div class="thai-word">{t_word}</div><div style="color: #666;">{t_kana}</div><div class="thai-mean">👉 {t_imi}</div></div>', unsafe_allow_html=True)
-                    
-                    try:
-                        tts = gTTS(text=t_word, lang="th")
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
-                            tts.save(fp.name)
-                            st.audio(fp.name)
-                    except: pass
-
-                # --- 2. 成り立ち ---
-                if len(content) >= 2:
-                    st.markdown('<div class="section-header">🧩 言葉の成り立ち</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="thai-card">{content[1]}</div>', unsafe_allow_html=True)
-
-                # --- 3. 例文 ---
-                if len(content) >= 3:
-                    st.markdown('<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="thai-card">{content[2]}</div>', unsafe_allow_html=True)
+                # シンプルな分割ロジック
+                # AIの回答を「改行」で分けて、キーワードが含まれる行を探す
+                lines = full_text.split('\n')
+                
+                # --- 表示 ---
+                st.markdown('<div class="section-header">🔍 検索結果</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="thai-card">{full_text}</div>', unsafe_allow_html=True)
+                
+                # 音声（最初の1行目にタイ語がある前提で抽出）
+                try:
+                    thai_text = re.findall(r'[ก-๙]+', full_text)[0]
+                    tts = gTTS(text=thai_text, lang="th")
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                        tts.save(fp.name)
+                        st.audio(fp.name)
+                except:
+                    pass
 
             except Exception as e:
-                st.error(f"ムー先生が困っています: {e}")
+                st.error(f"エラーが発生しました: {e}")
 
 st.divider()
 st.markdown("<div style='text-align: center; color: gray;'>Presented by Mr.Mu</div>", unsafe_allow_html=True)
