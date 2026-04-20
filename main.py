@@ -74,13 +74,16 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                 model_name = next((m for m in target_models if m in available_models), available_models[0])
                 model = genai.GenerativeModel(model_name=model_name)
 
-                # 【超重要】お喋りを封じ、形式を強制するプロンプト
+                # プロンプトの修正：ラベル禁止をさらに強化
                 p_text = f"""
 【厳守事項】
 1.挨拶、前置き、自己紹介（サワッディーカップ等）は一切禁止です。
-2.入力された日本語やタイ語が文章の場合は、省略せずに全文を「自然な口語（タイ人が実際に話す形）」で翻訳してください。
+2.「タイ語：」「カタカナ：」「意味：」といったラベル付けは絶対にしないでください。
+3.入力された日本語やタイ語が文章の場合は、省略せずに全文を「自然な口語（タイ人が実際に話す形）」で翻訳してください。
+
 キーワード：{search_query}
-以下の3つのセクションで、**タイ人が日常会話や口語で実際に使う自然な表現**を最優先して出力してください。
+
+以下の3つのセクションで、タイ人が日常会話や口語で実際に使う自然な表現を最優先して出力してください。
 
 【①意味】
 タイ語（会話で使う自然な形） | カタカナ | 日本語の意味
@@ -103,10 +106,14 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                 parts = re.split(r'【.*?】', full_text)
                 content = [p.strip() for p in parts if p.strip()]
 
-                # --- 1. 意味 ---
+                # --- 1. 意味（ラベル除去ガード付き） ---
                 if len(content) >= 1:
-                    base_info = content[0].split('|')
-                    t_word = base_info[0].strip() if len(base_info) > 0 else content[0]
+                    raw_kihon = content[0]
+                    # AIが勝手につけたラベル（タイ語：、カタカナ：、意味：等）を正規表現で強制排除
+                    clean_kihon = re.sub(r'(タイ語|カタカナ|日本語の意味|意味|翻訳|フレーズ)[：:]\s*', '', raw_kihon)
+                    
+                    base_info = clean_kihon.split('|')
+                    t_word = base_info[0].strip() if len(base_info) > 0 else clean_kihon
                     t_kana = base_info[1].strip() if len(base_info) > 1 else ""
                     t_imi  = base_info[2].strip() if len(base_info) > 2 else ""
 
@@ -114,7 +121,9 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                     st.markdown(f'''<div class="thai-card"><div class="thai-word">{t_word}</div><div style="color: #666;">{t_kana}</div><div class="thai-mean">👉 {t_imi}</div></div>''', unsafe_allow_html=True)
                     
                     try:
-                        tts = gTTS(text=t_word, lang="th")
+                        # 音声生成はタイ文字のみを抽出して実行（安定化のため）
+                        thai_only = "".join(re.findall(r'[ก-๙\s]+', t_word))
+                        tts = gTTS(text=thai_only if thai_only else t_word, lang="th")
                         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
                         tts.save(tmp.name)
                         st.audio(tmp.name)
@@ -125,11 +134,10 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                     st.markdown('<div class="section-header">🧩 ②言葉の成り立ち</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="thai-card">{content[1]}</div>', unsafe_allow_html=True)
 
-                # --- 3. すぐに使える表現（改行処理を追加） ---
+                # --- 3. すぐに使える表現（改行処理） ---
                 if len(content) >= 3:
-                    # 「2.」や「3.」の数字の前にHTMLの改行タグを挿入する
+                    # 数字の前に改行を入れる
                     formatted_expressions = re.sub(r'(\d\.)', r'<br>\1', content[2]).strip()
-                    # 最初の <br> は不要なので削除
                     if formatted_expressions.startswith('<br>'):
                         formatted_expressions = formatted_expressions[4:]
 
