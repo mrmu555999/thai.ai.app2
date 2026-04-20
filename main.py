@@ -54,7 +54,7 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
     if not search_query:
         st.warning("言葉を入力してくださいね！")
     else:
-        with st.spinner('ムー先生がデータを作成中...'):
+        with st.spinner('ムー先生AIが精力的に作成中...'):
             try:
                 # モデル選定
                 available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
@@ -112,7 +112,7 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
 
                 # --- 3. すぐに使える表現 ---
                 if len(content) >= 3:
-                    st.markdown('<div class="section-header">🚀 ③すぐに使える表現</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-header">🚀 ③すぐに使える簡単な表現</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="thai-card">{content[2].replace("|", " | ")}</div>', unsafe_allow_html=True)
 
             except Exception as e:
