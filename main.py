@@ -54,7 +54,12 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-search_query = st.text_input("", placeholder="例：眠い / ง่วงนอน")
+# 入力欄をtext_inputからtext_areaに変更（右下をドラッグして広げられます）
+search_query = st.text_area(
+    "", 
+    placeholder="例：眠い / ง่วงนอน / 明日友達とタイ料理を食べに行きます",
+    height=100
+)
 
 # --- 4. 生成ロジック ---
 if st.button("ムー先生に教えてもらう！", use_container_width=True):
