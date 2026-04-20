@@ -47,7 +47,7 @@ with col2:
 
 st.markdown("""
 <div style='text-align:center; margin-top: 10px;'>
-    <h1 style="font-size: 2rem; margin-bottom: 5px;">ムー先生の深掘りタイ語辞書 🐷🎓</h1>
+    <h1 style="font-size: 2rem; margin-bottom: 5px;">ムー先生のタイ語辞書 🐷🎓</h1>
     <p style='font-size: 0.95rem; font-weight: normal; color: #666; margin-bottom: 20px;'>
         日本語やタイ語（単語も文章もOK）を入力してね！
     </p>
