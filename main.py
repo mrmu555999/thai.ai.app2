@@ -55,33 +55,32 @@ if st.button("ムー先生に教えてもらう！"):
     else:
         with st.spinner('ムー先生が深掘り中...'):
             try:
+                # モデルの自動判別
                 available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
                 target_models = ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro"]
                 model_name = next((m for m in target_models if m in available_models), available_models[0])
                 model = genai.GenerativeModel(model_name=model_name)
 
-                # AIへの指示をより厳格に
+                # プロンプト（指示文を文字列として正しく設定）
                 prompt = f"""
-                タイ語講師「ムー先生」として【{search_query}】を以下の「3つのブロック」だけで解説してください。
-                余計な挨拶や装飾（**など）は一切禁止です。
+あなたはタイ語・タイ文化に精通した熱血講師「ムー先生」です。
+キーワード【{search_query}】について解説してください。
 
-                【基本】
-                タイ語 | カタカナ | 日本語の意味
+【基本】
+タイ語 | カタカナ | 日本語の意味
 
-                【成り立ち】
-                単語を分解した意味や由来の解説。
+【成り立ち】
+単語を分解した意味や由来の解説。
 
-                【バリエーション】
-                日常で使える例文を2つ。
-                """
+【バリエーション】
+日常で使える例文を2つ。
+"""
 
                 response = model.generate_content(prompt)
                 full_text = response.text
 
-                # セクションごとに分割
+                # 「【項目名】」を基準に分割する正規表現
                 sections = re.split(r'【.*?】', full_text)
-                # 分割すると [空要素, 基本の中身, 成り立ちの中身, バリエーションの中身] になる
-                
                 content_list = [s.strip() for s in sections if s.strip()]
 
                 # 1. 検索結果（基本）
@@ -119,7 +118,7 @@ if st.button("ムー先生に教えてもらう！"):
                     st.markdown(f'<div class="thai-card">{content_list[2]}</div>', unsafe_allow_html=True)
 
             except Exception as e:
-                st.error(f"エラー: {e}")
+                st.error(f"エラーが発生しましたクラップ: {e}")
 
 st.divider()
 st.markdown("<div style='text-align: center; color: gray;'>Presented by Mr.Mu</div>", unsafe_allow_html=True)
