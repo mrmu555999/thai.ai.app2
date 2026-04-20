@@ -117,10 +117,16 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                     st.markdown('<div class="section-header">🧩 ②言葉の成り立ち</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="thai-card">{content[1]}</div>', unsafe_allow_html=True)
 
-                # --- 3. すぐに使える表現 ---
+                # --- 3. すぐに使える表現（改行処理を追加） ---
                 if len(content) >= 3:
-                    st.markdown('<div class="section-header">🚀 ③すぐに使える簡単な表現</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="thai-card">{content[2].replace("|", " | ")}</div>', unsafe_allow_html=True)
+                    # 「2.」や「3.」の数字の前にHTMLの改行タグを挿入する
+                    formatted_expressions = re.sub(r'(\d\.)', r'<br>\1', content[2]).strip()
+                    # 最初の <br> は不要なので削除
+                    if formatted_expressions.startswith('<br>'):
+                        formatted_expressions = formatted_expressions[4:]
+
+                    st.markdown('<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="thai-card">{formatted_expressions}</div>', unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"エラー: {e}")
