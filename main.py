@@ -125,7 +125,7 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                     if formatted_expressions.startswith('<br>'):
                         formatted_expressions = formatted_expressions[4:]
 
-                    st.markdown('<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-header">🚀 ③すぐに使える簡単な表現</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="thai-card">{formatted_expressions}</div>', unsafe_allow_html=True)
 
             except Exception as e:
