@@ -67,13 +67,13 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
 【最優先指示】挨拶、前置き、自己紹介（サワッディーカップ等）は一切禁止です。
 以下の3つのタグを使って、指定の形式のみ出力してください。
 
-【意味】
+【①意味】
 タイ語 | カタカナ | 日本語の意味
 
-【成り立ち】
+【②成り立ち】
 言葉の分解や由来の簡潔な解説。
 
-【すぐに使える表現】
+【③すぐに使える表現】
 1. タイ語 | カタカナ | 意味
 2. タイ語 | カタカナ | 意味
 3. タイ語 | カタカナ | 意味
@@ -95,7 +95,7 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
                     t_kana = base_info[1].strip() if len(base_info) > 1 else ""
                     t_imi  = base_info[2].strip() if len(base_info) > 2 else ""
 
-                    st.markdown('<div class="section-header">🔍 意味</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-header">🔍 ①意味</div>', unsafe_allow_html=True)
                     st.markdown(f'''<div class="thai-card"><div class="thai-word">{t_word}</div><div style="color: #666;">{t_kana}</div><div class="thai-mean">👉 {t_imi}</div></div>''', unsafe_allow_html=True)
                     
                     try:
@@ -107,12 +107,12 @@ if st.button("ムー先生に教えてもらう！", use_container_width=True):
 
                 # --- 2. 成り立ち ---
                 if len(content) >= 2:
-                    st.markdown('<div class="section-header">🧩 言葉の成り立ち</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-header">🧩 ②言葉の成り立ち</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="thai-card">{content[1]}</div>', unsafe_allow_html=True)
 
                 # --- 3. すぐに使える表現 ---
                 if len(content) >= 3:
-                    st.markdown('<div class="section-header">🚀 すぐに使える表現</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="section-header">🚀 ③すぐに使える表現</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="thai-card">{content[2].replace("|", " | ")}</div>', unsafe_allow_html=True)
 
             except Exception as e:
